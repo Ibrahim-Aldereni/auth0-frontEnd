@@ -1,14 +1,15 @@
 import React from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { Carousel } from "react-bootstrap";
+import { Button, Card } from "react-bootstrap";
 import "./BestBooks.css";
 import axios from "axios";
-import "bootstrap/dist/css/bootstrap.min.css";
+import BookFormModal from "./components/BookFormModal";
 
 class BestBooks extends React.Component {
   state = {
     data: [],
     err: "",
+    showModal: false,
   };
 
   componentDidMount() {
@@ -28,53 +29,94 @@ class BestBooks extends React.Component {
       .get(url, { params: obj })
       .then((data) => {
         this.setState({ data: data.data });
-        console.log(this.state.data);
       })
       .catch((err) => {
         this.setState({ err: "There is no books" });
       });
   };
 
+  postData = (e) => {
+    e.preventDefault();
+
+    let dataObj = {
+      email: this.props.userEmail,
+      name: e.target.bookName.value,
+      desc: e.target.bookDesc.value,
+      status: e.target.select.value,
+    };
+
+    let serverUrl = process.env.REACT_APP_SERVER;
+    let url = `${serverUrl}/addbooks`;
+
+    axios
+      .post(url, dataObj)
+      .then((data) => {
+        this.setState({ data: data.data });
+      })
+      .catch((err) => {
+        this.setState({ err: "There is an error" });
+      });
+  };
+
+  deleteData = (e) => {
+    let serverUrl = process.env.REACT_APP_SERVER;
+    let id = e.target.name;
+    let url = `${serverUrl}/deletebooks/${id}`; // id is params
+
+    let dataObj = {
+      email: this.props.userEmail,
+    };
+
+    axios
+      .delete(url, { params: dataObj }) // email is query
+      .then((data) => {
+        this.setState({ data: data.data });
+      })
+      .catch((err) => {
+        this.setState({ err: "There is an error" });
+      });
+  };
+
+  showModal = () => {
+    this.setState({ showModal: true });
+  };
+
+  closeModal = () => {
+    this.setState({ showModal: false });
+  };
+
   render() {
     return (
       <>
-        {this.state.err ? (
-          <p>{this.state.err}</p>
-        ) : (
-          <Carousel
-            style={{
-              width: 400,
-              height: 600,
-              margin: "0 auto",
-              marginTop: 30,
-              marginBottom: 30,
-              backgroundColor: "black",
-              borderRadius: 20,
-            }}
-          >
-            {this.state.data.map((book, i) => {
-              return (
-                <Carousel.Item key={i}>
-                  <img
-                    className="d-block w-100"
-                    src={book.img}
-                    alt="First slide"
-                  />
-                  <Carousel.Caption
-                    style={{
-                      backgroundColor: "black",
-                      opacity: 0.8,
-                      borderRadius: 10,
-                    }}
+        <h1>My Best books</h1>
+        <Button onClick={this.showModal}>Add a Book</Button>
+        <div className="cards">
+          {this.state.data.map((book, i) => {
+            return (
+              <Card className="text-center" key={i}>
+                <Card.Header>{book.name}</Card.Header>
+                <Card.Body>
+                  <Card.Text>{book.desc}</Card.Text>
+                  <Button
+                    variant="primary"
+                    name={book._id}
+                    onClick={this.deleteData}
                   >
-                    <h3>{book.name}</h3>
-                    <p>{book.desc}</p>
-                  </Carousel.Caption>
-                </Carousel.Item>
-              );
-            })}
-          </Carousel>
-        )}
+                    Delete
+                  </Button>
+                </Card.Body>
+                <Card.Footer className="text-muted">{book.status}</Card.Footer>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* modal */}
+        <BookFormModal
+          show={this.state.showModal}
+          closeFunc={this.closeModal}
+          postFunc={this.postData}
+        />
       </>
     );
   }
