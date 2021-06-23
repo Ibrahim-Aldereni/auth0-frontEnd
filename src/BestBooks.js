@@ -4,12 +4,19 @@ import { Button, Card } from "react-bootstrap";
 import "./BestBooks.css";
 import axios from "axios";
 import BookFormModal from "./components/BookFormModal";
+import UpdateModal from "./components/UpdateModal";
 
 class BestBooks extends React.Component {
   state = {
     data: [],
     err: "",
     showModal: false,
+    updateShow: false,
+    //for update modal:
+    name: "",
+    desc: "",
+    status: "",
+    id: "",
   };
 
   componentDidMount() {
@@ -77,12 +84,57 @@ class BestBooks extends React.Component {
       });
   };
 
+  showUpdateModal = (i) => {
+    let bookObj = this.state.data[i];
+    this.setState({
+      updateShow: true,
+      name: bookObj.name,
+      desc: bookObj.desc,
+      status: bookObj.status,
+      id: bookObj._id,
+    });
+  };
+
+  change = (e) => {
+    if (e.target.name === "bookName") {
+      this.setState({ name: e.target.value });
+    } else if (e.target.name === "bookDesc") {
+      this.setState({ desc: e.target.value });
+    } else if (e.target.name === "select") {
+      this.setState({ status: e.target.value });
+    }
+  };
+
+  updateData = (e) => {
+    e.preventDefault();
+
+    let id = this.state.id;
+    let serverUrl = process.env.REACT_APP_SERVER;
+    let url = `${serverUrl}/updatebooks/${id}`;
+
+    let updatedData = {
+      email: this.props.userEmail,
+      name: e.target.bookName.value,
+      desc: e.target.bookDesc.value,
+      status: e.target.select.value,
+    };
+
+    axios
+      .put(url, updatedData)
+      .then((data) => {
+        this.setState({ data: data.data });
+      })
+      .catch((err) => {
+        this.setState({ err: "There is an error" });
+      });
+  };
+
   showModal = () => {
     this.setState({ showModal: true });
   };
 
   closeModal = () => {
-    this.setState({ showModal: false });
+    this.setState({ showModal: false, updateShow: false });
   };
 
   render() {
@@ -104,6 +156,12 @@ class BestBooks extends React.Component {
                   >
                     Delete
                   </Button>
+                  <Button
+                    variant="primary"
+                    onClick={() => this.showUpdateModal(i)}
+                  >
+                    Update
+                  </Button>
                 </Card.Body>
                 <Card.Footer className="text-muted">{book.status}</Card.Footer>
               </Card>
@@ -111,11 +169,22 @@ class BestBooks extends React.Component {
           })}
         </div>
 
-        {/* modal */}
+        {/* add book modal */}
         <BookFormModal
           show={this.state.showModal}
           closeFunc={this.closeModal}
           postFunc={this.postData}
+        />
+
+        {/* update model */}
+        <UpdateModal
+          show={this.state.updateShow}
+          closeFunc={this.closeModal}
+          name={this.state.name}
+          desc={this.state.desc}
+          status={this.state.status}
+          changeFunc={this.change}
+          updateFunc={this.updateData}
         />
       </>
     );
